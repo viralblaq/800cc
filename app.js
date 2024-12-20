@@ -1,6 +1,6 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.16.0/firebase-firestore.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -16,6 +16,51 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// Function to fetch query parameter
+function getQueryParam(param) {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(param);
+}
+// Load package details
+async function loadPackageDetails() {
+    const packageId = getQueryParam('packageId');
+    if (!packageId) {
+        document.getElementById('package-title').textContent = 'Package not found';
+        return;
+    }
+
+    try {
+        const docRef = doc(db, "packages", packageId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const packageData = docSnap.data();
+            document.getElementById('package-title').textContent = packageData.title;
+            document.getElementById('package-description').textContent = packageData.description;
+            document.getElementById('package-price').textContent = packageData.price;
+
+            const methodsList = document.getElementById('methods-list');
+            packageData.paymentMethods.forEach(method => {
+                const li = document.createElement('li');
+                // Extract the key and value from the object
+    const [type, value] = Object.entries(method)[0]; // Get the first key-value pair
+    li.textContent = `${type}: ${value}`;
+                methodsList.appendChild(li);
+            });
+        } else {
+            document.getElementById('package-title').textContent = 'Package not found';
+        }
+    } catch (error) {
+        console.error("Error loading package details:", error);
+        document.getElementById('package-title').textContent = 'Error loading package details';
+    }
+}
+
+// Call the function if on package-detail.html
+if (window.location.pathname.includes("package-detail.html")) {
+    loadPackageDetails();
+}
 
 // Get the form element
 const form = document.getElementById("credit-form");
